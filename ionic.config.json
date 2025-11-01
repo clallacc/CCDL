@@ -1,0 +1,7 @@
+{
+  "name": "CCDL",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
