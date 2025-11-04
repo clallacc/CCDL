@@ -35,13 +35,28 @@ svg {
   padding: 20px 0;
 }
 
+.search-form {
+  position: fixed;
+  width: 90vw;
+  margin: 0 50px 0 90px;
+  height: fit-content;
+  z-index: 2000;
+  background: transparent;
+}
+.mapContainer {
+  position: relative;
+  height: 98%;
+  overflow: hidden;
+  margin-bottom: 50px;
+}
+
 .directory-grid {
   margin-top: 20px;
 }
 
 .directory-pager {
   position: fixed;
-  top: auto;
+  top: 35vh;
   right: 20px;
   z-index: 1000;
   background: #ffffffd1;
@@ -66,4 +81,9 @@ svg {
 
 .itemNormal {
   background-color: white; /* or whatever default */
+}
+
+ion-list {
+  overflow-y: scroll;
+  height: 90%;
 }

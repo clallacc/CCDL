@@ -1,25 +1,3 @@
-// import { IonButton, IonLoading } from "@ionic/react";
-// import "./Directory.css";
-
-// interface ContainerProps {}
-
-// const Directory: React.FC<ContainerProps> = () => {
-
-//   return (
-//     <div id="container">
-//       <IonButton id="open-loading">Show Loading</IonButton>
-//       <IonLoading
-//         trigger="open-loading"
-//         message="Loading..."
-//         duration={3000}
-//         spinner="circles"
-//       ></IonLoading>
-//     </div>
-//   );
-// };
-
-// export default Directory;
-
 import React, { useEffect, useState } from "react";
 import {
   IonSearchbar,
@@ -29,8 +7,10 @@ import {
   IonSpinner,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
+  IonIcon,
 } from "@ionic/react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import "./Directory.css";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { OpenStreetMapProvider } from "leaflet-geosearch";
@@ -159,22 +139,60 @@ const Directory: React.FC<ContainerProps> = () => {
     }
   };
 
+  const getDirectoryListingContacted = async () => {
+    const { value } = await Preferences.get({ key: "CCDLcontacted" });
+    if (value) {
+      return JSON.parse(value);
+    }
+    return null;
+  };
+
+  const setDirectoryListingContacted = async (directoryData: any) => {
+    await Preferences.set({
+      key: "CCDLcontacted",
+      value: JSON.stringify(directoryData),
+    });
+  };
+
+  const markCompleted = async (address: string, phone: string) => {
+    const listing = (await getDirectoryListingContacted()) || [];
+    const filteredList = listing.filter(
+      (item: any) => item.address === address && item.phone === phone
+    );
+
+    if (filteredList.length === 0) {
+      const contacted = { address, phone };
+      const newListing = [...listing, contacted];
+      await setDirectoryListingContacted(newListing);
+    }
+  };
+
   return (
-    <div>
-      <form onSubmit={onSearchSubmit} style={{ padding: 8 }}>
+    <div className="mapContainer">
+      <form
+        className="search-form"
+        onSubmit={onSearchSubmit}
+        style={{ padding: 8 }}
+      >
         <IonSearchbar
           value={searchText}
           onIonChange={(e) => setSearchText(e.detail.value ?? "")}
           placeholder="Search address"
         />
-        <IonButton type="submit" expand="block" disabled={isListLoading}>
+        <IonButton
+          type="submit"
+          expand="block"
+          shape="round"
+          className="ion-margin-start ion-margin-end"
+          disabled={isListLoading}
+        >
           {isListLoading ? <IonSpinner name="dots" /> : "Search"}
         </IonButton>
       </form>
       <div style={{ height: "40vh", width: "100%", marginBottom: 16 }}>
         <MapContainer
           center={selectedLatLng || [10.6577911, -61.5155835]}
-          zoom={selectedLatLng ? 16 : 13}
+          zoom={selectedLatLng ? 18 : 13}
           scrollWheelZoom={false}
           style={{ height: "100%", width: "100%" }}
         >
@@ -195,7 +213,28 @@ const Directory: React.FC<ContainerProps> = () => {
             </Marker>
           )}
         </MapContainer>
+        <div
+          className="directory-pager"
+          style={{ display: "flex", justifyContent: "center", margin: 16 }}
+        >
+          <IonButton
+            disabled={currentPage === 1}
+            onClick={() => goToPage(currentPage - 1)}
+          >
+            Prev
+          </IonButton>
+          <span style={{ margin: "0 8px", alignSelf: "center" }}>
+            {currentPage} / {totalPages}
+          </span>
+          <IonButton
+            disabled={currentPage === totalPages}
+            onClick={() => goToPage(currentPage + 1)}
+          >
+            Next
+          </IonButton>
+        </div>
       </div>
+
       <IonList>
         {pagedList.map((item, idx) => (
           <IonItem
@@ -208,32 +247,25 @@ const Directory: React.FC<ContainerProps> = () => {
                 <strong>{item.name}</strong>
               </div>
               <div>{item.address}</div>
-              <div>{item.phone}</div>
-              {item.isContacted && (
-                <span style={{ color: "green" }}>Contacted</span>
-              )}
               {/* Add your "Mark Contacted" button logic here if needed */}
             </div>
+            <IonButton fill="clear" slot="end">
+              <h3>{item.phone}</h3>
+            </IonButton>
+            {item.phone && (
+              <IonButton
+                onClick={() => markCompleted(item.address, item.phone || "")}
+                slot="end"
+                color={"danger"}
+              >
+                {!item.isContacted && (
+                  <span style={{ color: "white" }}> Contacted</span>
+                )}
+              </IonButton>
+            )}
           </IonItem>
         ))}
       </IonList>
-      <div style={{ display: "flex", justifyContent: "center", margin: 16 }}>
-        <IonButton
-          disabled={currentPage === 1}
-          onClick={() => goToPage(currentPage - 1)}
-        >
-          Prev
-        </IonButton>
-        <span style={{ margin: "0 8px", alignSelf: "center" }}>
-          {currentPage} / {totalPages}
-        </span>
-        <IonButton
-          disabled={currentPage === totalPages}
-          onClick={() => goToPage(currentPage + 1)}
-        >
-          Next
-        </IonButton>
-      </div>
       <IonInfiniteScroll
         onIonInfinite={(event) => {
           loadData(event);

@@ -13,7 +13,7 @@ const Home: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Computers and controls Directory Lookup</IonTitle>
+          <IonTitle>Computers and Controls Directory Lookup</IonTitle>
         </IonToolbar>
         {/* <div id="mapId"></div> */}
       </IonHeader>
