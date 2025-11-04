@@ -1,2 +1,23 @@
 /* For information on how to create your own theme, please see:
 http://ionicframework.com/docs/theming/ */
+
+
+.search-div {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    z-index: 1000;
+    padding: 30px 60px;
+}
+
+.searchbar-input.sc-ion-searchbar-md {
+  border-radius: 25px !important;
+  background-position: left 8px center;
+  height: auto;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #7f8490;
+  background-color: white;
+  -webkit-box-shadow: 0 8px 14px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.1) !important;
+}
