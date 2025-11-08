@@ -48,6 +48,8 @@ const Directory: React.FC<ContainerProps> = () => {
   const [selectedLatLng, setSelectedLatLng] = useState<[number, number] | null>(
     null
   );
+  const [contactedList, setContactedList] = useState<any[]>([]);
+  const [listFloating, setListFloating] = useState(false);
 
   // Fetch data on mount
   useEffect(() => {
@@ -86,6 +88,14 @@ const Directory: React.FC<ContainerProps> = () => {
     return null;
   }
 
+  useEffect(() => {
+    const loadContacted = async () => {
+      const list = (await getDirectoryListingContacted()) || [];
+      setContactedList(list);
+    };
+    loadContacted();
+  }, []);
+
   // Filter results
   const filterResults = (list: DirectoryItem[], search: string) => {
     const lowerSearch = search?.toLowerCase();
@@ -110,18 +120,23 @@ const Directory: React.FC<ContainerProps> = () => {
 
   // Geocode and show marker on map
   const onAddressClick = async (address: string, item: DirectoryItem) => {
-    try {
-      const results = await geoProvider.search({ query: address });
-      if (results && results.length > 0) {
-        const { x: lng, y: lat } = results[0];
-        setSelectedLatLng([lat, lng]);
-        setSelectedItem(item);
-      } else {
-        alert("Address not found!");
+    setSelectedLatLng(null);
+    setSelectedItem(null);
+
+    setTimeout(async () => {
+      try {
+        const results = await geoProvider.search({ query: address });
+        if (results && results.length > 0) {
+          const { x: lng, y: lat } = results[0];
+          setSelectedLatLng([lat, lng]);
+          setSelectedItem(item);
+        } else {
+          alert("Address not found!");
+        }
+      } catch (err) {
+        alert("Geocoding error: " + err);
       }
-    } catch (err) {
-      alert("Geocoding error: " + err);
-    }
+    }, 0);
   };
 
   // Pagination
@@ -155,15 +170,30 @@ const Directory: React.FC<ContainerProps> = () => {
   };
 
   const markCompleted = async (address: string, phone: string) => {
-    const listing = (await getDirectoryListingContacted()) || [];
-    const filteredList = listing.filter(
-      (item: any) => item.address === address && item.phone === phone
+    const listing = contactedList || [];
+    const exists = listing.some(
+      (item) => item.address === address && item.phone === phone
     );
 
-    if (filteredList.length === 0) {
+    if (!exists) {
       const contacted = { address, phone };
       const newListing = [...listing, contacted];
       await setDirectoryListingContacted(newListing);
+      setContactedList(newListing); // update state to re-render UI
+    }
+  };
+
+  const disableListField = (address: string, phone: string) => {
+    return contactedList.some(
+      (item) => item.address === address && item.phone === phone
+    );
+  };
+
+  const expandContractList = () => {
+    if (listFloating) {
+      setListFloating(false);
+    } else {
+      setListFloating(true);
     }
   };
 
@@ -189,7 +219,13 @@ const Directory: React.FC<ContainerProps> = () => {
           {isListLoading ? <IonSpinner name="dots" /> : "Search"}
         </IonButton>
       </form>
-      <div style={{ height: "40vh", width: "100%", marginBottom: 16 }}>
+      <div
+        style={{
+          height: listFloating ? "90vh" : "40vh",
+          width: "100%",
+          marginBottom: 16,
+        }}
+      >
         <MapContainer
           center={selectedLatLng || [10.6577911, -61.5155835]}
           zoom={selectedLatLng ? 18 : 13}
@@ -235,9 +271,16 @@ const Directory: React.FC<ContainerProps> = () => {
         </div>
       </div>
 
-      <IonList>
+      <IonList className={listFloating ? "floating-list" : ""}>
+        <div className="expand-btn">
+          <IonButton onClick={() => expandContractList()} fill="clear">
+            {listFloating ? "expand" : "contract"}
+          </IonButton>
+        </div>
+
         {pagedList.map((item, idx) => (
           <IonItem
+            className="list-item"
             key={idx}
             button
             onClick={() => onAddressClick(item.address, item)}
@@ -252,15 +295,13 @@ const Directory: React.FC<ContainerProps> = () => {
             <IonButton fill="clear" slot="end">
               <h3>{item.phone}</h3>
             </IonButton>
-            {item.phone && (
+            {item.phone && !disableListField(item.address, item.phone) && (
               <IonButton
                 onClick={() => markCompleted(item.address, item.phone || "")}
                 slot="end"
                 color={"danger"}
               >
-                {!item.isContacted && (
-                  <span style={{ color: "white" }}> Contacted</span>
-                )}
+                <span style={{ color: "white" }}>Contacted</span>
               </IonButton>
             )}
           </IonItem>

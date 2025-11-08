@@ -83,7 +83,27 @@ svg {
   background-color: white; /* or whatever default */
 }
 
+.list-item {
+  padding: 15px 20px;
+}
+
 ion-list {
   overflow-y: scroll;
   height: 90%;
+}
+
+.floating-list {
+    position: absolute;
+    z-index: 1000;
+    width: 90%;
+    top: 460px;
+    left: 5%;
+    background: #f0f8ffab;
+}
+
+.expand-btn {
+  width: 100%;
+  text-align: center;
+  margin-top: -20px;
+  font-size: small;
 }
