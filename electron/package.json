@@ -4,7 +4,7 @@
   "description": "An Amazing Capacitor App",
   "author": {
     "name": "Christian Lalla",
-    "email": ""
+    "email": "clalla@computersandcontrols.com"
   },
   "repository": {
     "type": "git",
@@ -40,5 +40,22 @@
   "keywords": [
     "capacitor",
     "electron"
-  ]
+  ],
+  "build": {
+    "appId": "com.computersandcontrols.ccdl",
+    "productName": "CCDL",
+    "asar": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/appIcon.ico"
+    },
+    "directories": {
+      "buildResources": "assets"
+    }
+  }
 }

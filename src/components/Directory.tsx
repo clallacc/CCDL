@@ -249,6 +249,9 @@ const Directory: React.FC<ContainerProps> = () => {
             </Marker>
           )}
         </MapContainer>
+        <div className="menu-div">
+          <IonButton fill="clear">menu</IonButton>
+        </div>
         <div
           className="directory-pager"
           style={{ display: "flex", justifyContent: "center", margin: 16 }}
