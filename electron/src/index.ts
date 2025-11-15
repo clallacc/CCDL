@@ -1,70 +1,110 @@
-import type { CapacitorElectronConfig } from '@capacitor-community/electron';
-import { getCapacitorElectronConfig, setupElectronDeepLinking } from '@capacitor-community/electron';
-import type { MenuItemConstructorOptions } from 'electron';
-import { app, MenuItem } from 'electron';
-import electronIsDev from 'electron-is-dev';
-import unhandled from 'electron-unhandled';
-import { autoUpdater } from 'electron-updater';
+import type { CapacitorElectronConfig } from "@capacitor-community/electron";
+import {
+  getCapacitorElectronConfig,
+  setupElectronDeepLinking,
+} from "@capacitor-community/electron";
+import type { MenuItemConstructorOptions } from "electron";
+import { app, Menu, ipcMain } from "electron";
+import electronIsDev from "electron-is-dev";
+import unhandled from "electron-unhandled";
+import { autoUpdater } from "electron-updater";
 
-import { ElectronCapacitorApp, setupContentSecurityPolicy, setupReloadWatcher } from './setup';
+import {
+  ElectronCapacitorApp,
+  setupContentSecurityPolicy,
+  setupReloadWatcher,
+} from "./setup";
 
 // Graceful handling of unhandled errors.
 unhandled();
 
-// Define our menu templates (these are optional)
-const trayMenuTemplate: (MenuItemConstructorOptions | MenuItem)[] = [new MenuItem({ label: 'Quit App', role: 'quit' })];
-const appMenuBarMenuTemplate: (MenuItemConstructorOptions | MenuItem)[] = [
-  { role: process.platform === 'darwin' ? 'appMenu' : 'fileMenu' },
-  { role: 'viewMenu' },
+// Define tray menu template (optional)
+const trayMenuTemplate: MenuItemConstructorOptions[] = [
+  { label: "Quit App", role: "quit" },
 ];
 
 // Get Config options from capacitor.config
-const capacitorFileConfig: CapacitorElectronConfig = getCapacitorElectronConfig();
+const capacitorFileConfig: CapacitorElectronConfig =
+  getCapacitorElectronConfig();
 
-// Initialize our app. You can pass menu templates into the app here.
-// const myCapacitorApp = new ElectronCapacitorApp(capacitorFileConfig);
-const myCapacitorApp = new ElectronCapacitorApp(capacitorFileConfig, trayMenuTemplate, appMenuBarMenuTemplate);
+// Initialize our app with tray menu (no app menu here, we'll set it later)
+const myCapacitorApp = new ElectronCapacitorApp(
+  capacitorFileConfig,
+  trayMenuTemplate
+);
 
-// If deeplinking is enabled then we will set it up here.
+// Setup deep linking if enabled
 if (capacitorFileConfig.electron?.deepLinkingEnabled) {
   setupElectronDeepLinking(myCapacitorApp, {
-    customProtocol: capacitorFileConfig.electron.deepLinkingCustomProtocol ?? 'mycapacitorapp',
+    customProtocol:
+      capacitorFileConfig.electron.deepLinkingCustomProtocol ??
+      "mycapacitorapp",
   });
 }
 
-// If we are in Dev mode, use the file watcher components.
+// Setup reload watcher in dev mode
 if (electronIsDev) {
   setupReloadWatcher(myCapacitorApp);
 }
 
-// Run Application
+// Main async function to initialize app and set menu
 (async () => {
-  // Wait for electron app to be ready.
   await app.whenReady();
-  // Security - Set Content-Security-Policy based on whether or not we are in dev mode.
+
+  // Setup Content Security Policy
   setupContentSecurityPolicy(myCapacitorApp.getCustomURLScheme());
-  // Initialize our app, build windows, and load content.
+
+  // Initialize Capacitor Electron app (creates main window)
   await myCapacitorApp.init();
-  // Check for updates if we are in a packaged app.
+
+  // Check for updates
   autoUpdater.checkForUpdatesAndNotify();
+
+  // Get main window instance
+  const mainWindow = myCapacitorApp.getMainWindow();
+
+  // Define menu template with proper typing and platform-specific roles
+  const menuTemplate: MenuItemConstructorOptions[] = [
+    ...(process.platform === "darwin"
+      ? [{ role: "appMenu" as const }]
+      : [{ role: "fileMenu" as const }]),
+    { role: "viewMenu" as const },
+    {
+      label: "Edit",
+      submenu: [
+        {
+          label: "Add List Item",
+          click: () => {
+            // Send an IPC event to the renderer process
+            mainWindow.webContents.send("show-csv-to-json");
+          },
+        },
+      ],
+    },
+  ];
+
+  // Build and set application menu
+  const menu = Menu.buildFromTemplate(menuTemplate);
+  Menu.setApplicationMenu(menu);
 })();
 
-// Handle when all of our windows are close (platforms have their own expectations).
-app.on('window-all-closed', function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
+// Handle when all windows are closed
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
-// When the dock icon is clicked.
-app.on('activate', async function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
+// Handle dock icon click on macOS
+app.on("activate", async () => {
   if (myCapacitorApp.getMainWindow().isDestroyed()) {
     await myCapacitorApp.init();
   }
 });
 
 // Place all ipc or other electron api calls and custom functionality under this line
+
+// Example: Handle IPC events from the renderer process
+ipcMain.on("example-event", (event, args) => {
+  console.log("Received example-event with args:", args);
+});
